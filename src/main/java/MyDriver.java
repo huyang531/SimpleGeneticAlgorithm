@@ -12,9 +12,7 @@ import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -29,8 +27,16 @@ public class MyDriver {
     public static final Vector<Integer> weights = new Vector<>();
     public static long capacity;
 
+    public static Path tmpDir;
+    public static Path inputDir;
+    public static Path outputDir;
+
     /**
-     * Launch and control the task.
+     * Launch and control the tasks. This method controls the overall flow. It will start multiple MapReduce tasks. The
+     * first task is to generate the initial population using InitialMapper and an Identity Reducer. Then, it will start
+     * no more than <maxIterations> iterations to evolve and mutate the population. After each iteration, the program
+     * will go through all the best individuals in the current population by reading files in the GLOBAL_MAP_RESULT_DIR.
+     * The program will exit either when convergence is reached or <maxIterations> is reached.
      *
      * @param nReducers     number of Reducers
      * @param geneLen       length of an individual's gene
@@ -63,9 +69,9 @@ public class MyDriver {
             job.setPartitionerClass(MyPartitioner.class);
 
             // set input and output dir
-            Path tmpDir = new Path(ROOT_DIR + "GeneticAlgoRuntimeTmp");
-            Path inputDir = new Path(tmpDir, "iter_" + it);
-            Path outputDir = new Path(tmpDir, "iter_" + (it + 1));
+            tmpDir = new Path(ROOT_DIR + "GeneticAlgoRuntimeTmp");
+            inputDir = new Path(tmpDir, "iter_" + it);
+            outputDir = new Path(tmpDir, "iter_" + (it + 1));
             FileInputFormat.setInputPaths(job, inputDir);
             FileOutputFormat.setOutputPath(job, outputDir);
 
@@ -150,6 +156,21 @@ public class MyDriver {
         return 0;
     }
 
+    /**
+     * Execute the program.
+     * @param args four arguments are expected:
+     *             nReducers: number of Reducers; this determines how "parallel" the program is — it should neither be
+     *                  too high (bad crossover) nor too low (bad performance)
+     *             inputFile: the 0-1 knapsack problem; the first Long is the capacity of the knapsack, followed by a
+     *                  list of items' weights
+     *             maxIterations: the maximum number of iteration of the Genetic Algorithm; this is to prevent the
+     *                  program running endlessly. It should neither be too small nor too large.
+     *             popTimesNlogN: this is a coefficient that determines how large the initial population will be. The
+     *                  formula is: initial population = popTimesNlogN * geneLen * log(2, geneLen)
+     * @throws IOException file operations and Hadoop operations may throw this exception
+     * @throws InterruptedException Hadoop operations may throw this exception
+     * @throws ClassNotFoundException Hadoop operations may throw this exception
+     */
     public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
         if (args.length != 5) {
             System.err.println("Usage: GeneticAlgorithm <nReducers> <inputFile> <maxIterations> <popTimesNlogN>");
@@ -169,7 +190,6 @@ public class MyDriver {
         while (scanner.hasNextInt()) weights.add(scanner.nextInt());
         int geneLen = weights.size();
 
-        // initial population = popTimesNlogN * geneLen * log(2, geneLen)
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));
 
         System.exit(launch(nReducers, geneLen, maxIterations, pop));
