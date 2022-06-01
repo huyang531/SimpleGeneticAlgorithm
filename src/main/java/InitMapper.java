@@ -4,11 +4,24 @@ import org.apache.hadoop.mapreduce.Mapper;
 import java.io.IOException;
 import java.util.Random;
 
+/**
+ * The Mapper used to generate the initial population.
+ */
 public class InitMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable> {
 
     public Random rng = new Random(System.nanoTime());
     public LongWritable[] individual = new LongWritable[MyDriver.LONGS_PER_ARRAY];
 
+    /**
+     * This method will generate num individuals randomly using bit-wise operation (which is more efficient). It will
+     * take in some dummy input which is not important.
+     *
+     * @param key not important
+     * @param value not important
+     * @param context context of current Map task
+     * @throws IOException Hadoop operations may throw this exception
+     * @throws InterruptedException Hadoop operations may throw this exception
+     */
     @Override
     public void map(LongArrayWritable key, LongWritable value, Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
         int num = (int) Math.ceil((double) MyDriver.BITS_PER_MAPPER / MyDriver.weights.size());
