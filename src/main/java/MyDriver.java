@@ -22,9 +22,10 @@ public class MyDriver {
     public static final int LONG_BITS = 64; // number of bits in a Long
     public static final String ROOT_DIR = "/home/huyang"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "/map-results"; // directory to store results
-    public static final long BITS_PER_MAPPER = 999999L; // TODO find number of bits an initial mapper can handle
+    public static final long BITS_PER_MAPPER = 6L; // TODO find number of bits an initial mapper can handle
 
     public static final Vector<Integer> weights = new Vector<>();
+    public static final Vector<Integer> values = new Vector<>();
     public static long capacity;
 
     public static Path tmpDir;
@@ -187,7 +188,10 @@ public class MyDriver {
         FSDataInputStream in = fs.open(inputPath);
         Scanner scanner = new Scanner(in);
         capacity = scanner.nextLong();
-        while (scanner.hasNextInt()) weights.add(scanner.nextInt());
+        while (scanner.hasNextLine()) {
+            weights.add(scanner.nextInt());
+            values.add(scanner.nextInt());
+        }
         int geneLen = weights.size();
 
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));

@@ -30,7 +30,8 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
         ones = new Vector<>();
 
         // get current knapsack value
-        long f = 0;
+        long weight = 0;
+        long fitness = 0;
         for (int i = 0; i < individual.length; i++) {
             long mask = 1L;
             int limit = (i == individual.length - 1 ? MyDriver.GENE_LEN_REMAINDER : MyDriver.LONG_BITS);
@@ -38,14 +39,15 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
                 int index = i * MyDriver.LONG_BITS + j;
                 if ((individual[i].get() & mask) == 1) {
                     ones.add(index);
-                    f += MyDriver.weights.get(index);
+                    weight += MyDriver.weights.get(index);
+                    fitness += MyDriver.values.get(index);
                 }
                 mask <<= 1;
             }
         }
 
         // if knapsack overflow (sneaky evolve)
-        while (f > MyDriver.capacity) {
+        while (weight > MyDriver.capacity) {
             // randomly take out one item
             int randomIndex = rng.nextInt(ones.size());
             int takeOutIndex = ones.get(randomIndex);
@@ -53,10 +55,11 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
 
             long minuend = 1L << (takeOutIndex % MyDriver.LONG_BITS);
             individual[takeOutIndex / MyDriver.LONG_BITS].set(individual[takeOutIndex / MyDriver.LONG_BITS].get() - minuend);
-            f -= MyDriver.weights.get(takeOutIndex);
+            weight -= MyDriver.weights.get(takeOutIndex);
+            fitness -= MyDriver.values.get(takeOutIndex);
         }
 
-        return f;
+        return fitness;
     }
 
     /**
