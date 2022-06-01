@@ -19,6 +19,7 @@ import java.util.Scanner;
 import java.util.Vector;
 
 public class MyDriver {
+    public static int GENE_LEN_REMAINDER; // equals geneLen % LONG_BITS
     public static int LONGS_PER_ARRAY; // number of longs in an array needed to represent a gene
     public static final int LONG_BITS = 64; // number of bits in a Long
     public static final String ROOT_DIR = "/home/huyang"; // root directory for temp files
@@ -26,6 +27,7 @@ public class MyDriver {
     public static final long BITS_PER_MAPPER = 999999L; // TODO find number of bits an initial mapper can handle
 
     public static final Vector<Integer> weights = new Vector<>();
+    public static long capacity;
 
     /**
      * Launch and control the task.
@@ -39,6 +41,7 @@ public class MyDriver {
      */
     public static int launch(int nReducers, int geneLen, int maxIterations, int pop) throws IOException, InterruptedException, ClassNotFoundException {
         LONGS_PER_ARRAY = (int) Math.ceil((double) geneLen / LONG_BITS);
+        GENE_LEN_REMAINDER = geneLen % LONG_BITS;
         int it = 0;
         int nMappers = (int) Math.ceil((double) pop * geneLen / BITS_PER_MAPPER); // number of initial mappers needed
 
@@ -162,6 +165,7 @@ public class MyDriver {
         FileSystem fs = FileSystem.get(new Configuration());
         FSDataInputStream in = fs.open(inputPath);
         Scanner scanner = new Scanner(in);
+        capacity = scanner.nextLong();
         while (scanner.hasNextInt()) weights.add(scanner.nextInt());
         int geneLen = weights.size();
 
