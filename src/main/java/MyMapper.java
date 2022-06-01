@@ -111,4 +111,8 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
         super.cleanup(context);
     }
 
+    @Override
+    protected void setup(Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        super.setup(context);
+    }
 }

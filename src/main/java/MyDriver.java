@@ -20,9 +20,9 @@ public class MyDriver {
     public static int GENE_LEN_REMAINDER; // equals geneLen % LONG_BITS
     public static int LONGS_PER_ARRAY; // number of longs in an array needed to represent a gene
     public static final int LONG_BITS = 64; // number of bits in a Long
-    public static final String ROOT_DIR = "/home/huyang"; // root directory for temp files
+    public static final String ROOT_DIR = "/Users/huyang/Desktop/Courses/大数据原理与技术/final_project/SimpleGeneticAlgorithm/runtime"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "/map-results"; // directory to store results
-    public static final long BITS_PER_MAPPER = 6L; // TODO find number of bits an initial mapper can handle
+    public static final long BITS_PER_MAPPER = 200L; // TODO find number of bits an initial mapper can handle
 
     public static final Vector<Integer> weights = new Vector<>();
     public static final Vector<Integer> values = new Vector<>();
@@ -55,10 +55,10 @@ public class MyDriver {
         while (true) {
             // create job and config
             Configuration conf = new Configuration();
-            Job job = Job.getInstance(conf, "0-1 Knapsack Problem");
+            Job job = Job.getInstance(conf, "0-1 Knapsack Problem Iter " + it);
 
             // set config
-            job.setSpeculativeExecution(true);
+//            job.setSpeculativeExecution(true);
 
             job.setInputFormatClass(SequenceFileInputFormat.class);
             job.setOutputKeyClass(LongArrayWritable.class);
@@ -70,7 +70,7 @@ public class MyDriver {
             job.setPartitionerClass(MyPartitioner.class);
 
             // set input and output dir
-            tmpDir = new Path(ROOT_DIR + "GeneticAlgoRuntimeTmp");
+            tmpDir = new Path(ROOT_DIR + "/GeneticAlgoRuntimeTmp");
             inputDir = new Path(tmpDir, "iter_" + it);
             outputDir = new Path(tmpDir, "iter_" + (it + 1));
             FileInputFormat.setInputPaths(job, inputDir);
@@ -82,7 +82,7 @@ public class MyDriver {
                 fs.delete(tmpDir, true);
                 System.out.println("[INFO] Initialized GeneticAlgoRuntimeTmp");
                 for (int i = 0; i < nMappers; i++) {
-                    Path file = new Path(inputDir, "part-" + String.format("%05d", i));
+                    Path file = new Path(inputDir, "dummy-file-" + String.format("%05d", i));
                     // TODO: simplify dummy file input
                     SequenceFile.Writer.Option optionFile = SequenceFile.Writer.file(file);
                     SequenceFile.Writer.Option optionKey = SequenceFile.Writer.keyClass(LongArrayWritable.class);
@@ -90,13 +90,14 @@ public class MyDriver {
                     SequenceFile.Writer writer = SequenceFile.createWriter(conf, optionFile, optionKey, optionValue);
 
                     LongWritable[] individual = new LongWritable[1];
+                    individual[0] = new LongWritable(0);
                     writer.append(new LongArrayWritable(individual), new LongWritable(0));
                     writer.close();
                 }
 
                 // set job
                 job.setMapperClass(InitMapper.class);
-                job.setReducerClass(Reducer.class);
+//                job.setReducerClass(Reducer.class);
                 job.setNumReduceTasks(0);
             } else { // real GA tasks
                 // set job
@@ -173,7 +174,7 @@ public class MyDriver {
      * @throws ClassNotFoundException Hadoop operations may throw this exception
      */
     public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
-        if (args.length != 5) {
+        if (args.length != 4) {
             System.err.println("Usage: GeneticAlgorithm <nReducers> <inputFile> <maxIterations> <popTimesNlogN>");
             System.exit(-1);
         }
@@ -189,12 +190,17 @@ public class MyDriver {
         Scanner scanner = new Scanner(in);
         capacity = scanner.nextLong();
         while (scanner.hasNextLine()) {
-            weights.add(scanner.nextInt());
-            values.add(scanner.nextInt());
+            if (scanner.hasNextInt()) { // prevent reading empty line
+                weights.add(scanner.nextInt());
+                values.add(scanner.nextInt());
+            }
         }
         int geneLen = weights.size();
 
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));
+
+        // clear runtime
+        fs.delete(new Path(ROOT_DIR), true);
 
         System.exit(launch(nReducers, geneLen, maxIterations, pop));
     }

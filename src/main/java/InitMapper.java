@@ -38,4 +38,14 @@ public class InitMapper extends Mapper<LongArrayWritable, LongWritable, LongArra
             context.write(new LongArrayWritable(individual), new LongWritable(0));
         }
     }
+
+    @Override
+    protected void cleanup(Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        super.cleanup(context);
+    }
+
+    @Override
+    protected void setup(Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        super.setup(context);
+    }
 }
