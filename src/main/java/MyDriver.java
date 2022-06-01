@@ -1,10 +1,10 @@
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
-import org.apache.hadoop.mapred.lib.IdentityReducer;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -12,27 +12,33 @@ import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStreamReader;
+import java.util.Scanner;
+import java.util.Vector;
 
 public class MyDriver {
+    public static int LONGS_PER_ARRAY; // number of longs in an array needed to represent a gene
     public static final int LONG_BITS = 64; // number of bits in a Long
     public static final String ROOT_DIR = "/home/huyang"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "/map-results"; // directory to store results
     public static final long BITS_PER_MAPPER = 999999L; // TODO find number of bits an initial mapper can handle
 
+    public static final Vector<Integer> weights = new Vector<>();
+
     /**
      * Launch and control the task.
      *
-     * @param nReducers   number of Reducers
-     * @param geneLen     length of an individual's gene
-     * @param maxIterations number of iterations
-     * @param pop         number of initial population
+     * @param nReducers     number of Reducers
+     * @param geneLen       length of an individual's gene
+     * @param maxIterations max number of iterations
+     * @param pop           number of initial population
      * @return status code
      * @throws IOException many Hadoop methods throw this exception
      */
     public static int launch(int nReducers, int geneLen, int maxIterations, int pop) throws IOException, InterruptedException, ClassNotFoundException {
-        int LONGS_PER_ARRAY = (int) Math.ceil((double) geneLen / LONG_BITS);
+        LONGS_PER_ARRAY = (int) Math.ceil((double) geneLen / LONG_BITS);
         int it = 0;
         int nMappers = (int) Math.ceil((double) pop * geneLen / BITS_PER_MAPPER); // number of initial mappers needed
 
@@ -49,7 +55,7 @@ public class MyDriver {
             job.setOutputValueClass(LongWritable.class);
             job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
-            conf.set("ga.longsPerArray", String.valueOf(LONGS_PER_ARRAY));
+//            conf.set("ga.longsPerArray", String.valueOf(LONGS_PER_ARRAY));
 
             job.setPartitionerClass(MyPartitioner.class);
 
@@ -108,7 +114,7 @@ public class MyDriver {
 
                 for (FileStatus fileStatus : fileStatuses) {
                     Path inFile = fileStatus.getPath();
-                    SequenceFile.Reader.Option optionFile= SequenceFile.Reader.file(inFile);
+                    SequenceFile.Reader.Option optionFile = SequenceFile.Reader.file(inFile);
                     SequenceFile.Reader reader = new SequenceFile.Reader(conf, optionFile);
 
                     // find best individual
@@ -143,15 +149,23 @@ public class MyDriver {
 
     public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
         if (args.length != 5) {
-            System.err.println("Usage: GeneticAlgorithm <nReducers> <geneLen> <maxIterations> <popTimesNlogN>");
+            System.err.println("Usage: GeneticAlgorithm <nReducers> <inputFile> <maxIterations> <popTimesNlogN>");
             System.exit(-1);
         }
 
         // read args
         int nReducers = Integer.parseInt(args[0]);
-        int geneLen = Integer.parseInt(args[1]);
+        Path inputPath = new Path(args[1]);
         int maxIterations = Integer.parseInt(args[2]);
-        // pop = popTimesNlogN * geneLen * log(2, geneLen)
+
+        // read file and determine geneLen
+        FileSystem fs = FileSystem.get(new Configuration());
+        FSDataInputStream in = fs.open(inputPath);
+        Scanner scanner = new Scanner(in);
+        while (scanner.hasNextInt()) weights.add(scanner.nextInt());
+        int geneLen = weights.size();
+
+        // initial population = popTimesNlogN * geneLen * log(2, geneLen)
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));
 
         System.exit(launch(nReducers, geneLen, maxIterations, pop));
