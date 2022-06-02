@@ -118,7 +118,6 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
                        Iterable<LongWritable> values,
                        Reducer<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context)
             throws IOException, InterruptedException {
-
         for (LongWritable value : values) {
             if (processedIndividuals < tournamentSize) {
                 tournamentInd[processedIndividuals] = key.get();
@@ -141,7 +140,6 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
             }
             processedIndividuals++;
         }
-
     }
 
     @Override
