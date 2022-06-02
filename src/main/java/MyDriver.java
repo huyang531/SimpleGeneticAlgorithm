@@ -33,7 +33,10 @@ public class MyDriver {
     public static Path outputDir;
 
     private static long lastMax;
-    private static long converged;
+    private static int converged = 0;
+    private static int convergenceThreshold;
+
+    private static final long programStartTime = System.currentTimeMillis();
 
     /**
      * Launch and control the tasks. This method controls the overall flow. It will start multiple MapReduce tasks. The
@@ -83,12 +86,16 @@ public class MyDriver {
 
             FileSystem fs = FileSystem.get(conf);
             if (it == 0) { // initialization
+                System.out.println("[INFO] Program started.");
+                System.out.println("[INFO] Number of Mappers: " + nMappers);
+                System.out.println("[INFO] Number of Reducers: " + nReducers);
+                System.out.println("[WARNING] Existing files from temporary directory are deleted: " + tmpDir);
+                System.out.println("---------------------------");
+
                 // write nMappers files to the fs in order to control the number of mappers
                 fs.delete(tmpDir, true);
-                System.out.println("[INFO] Initialized GeneticAlgoRuntimeTmp");
                 for (int i = 0; i < nMappers; i++) {
                     Path file = new Path(inputDir, "dummy-file-" + String.format("%05d", i));
-                    // TODO: simplify dummy file input
                     SequenceFile.Writer.Option optionFile = SequenceFile.Writer.file(file);
                     SequenceFile.Writer.Option optionKey = SequenceFile.Writer.keyClass(LongArrayWritable.class);
                     SequenceFile.Writer.Option optionValue = SequenceFile.Writer.valueClass(LongWritable.class);
@@ -142,6 +149,14 @@ public class MyDriver {
                         if (currFitness.get() > maxFitness.get()) {
                             maxFitness.set(currFitness.get());
                             maxIndividual.set(currIndividual.get());
+
+                            // track convergence
+                            if (maxFitness.get() == lastMax) {
+                                converged++;
+                            } else {
+                                converged = 0;
+                            }
+                            lastMax = maxFitness.get();
                         }
                     }
 
@@ -172,7 +187,16 @@ public class MyDriver {
                 System.out.println("Best Weight: " + maxWeight);
                 System.out.println("Time Taken: " + (System.currentTimeMillis() - startTime) + "ms\n");
 
-                if (it > maxIterations) break; // TODO check if convergence is reached
+                // check if convergence or maxIterations is reached
+                if (it > maxIterations) {
+                    System.out.println("[INFO] Maximum number of iteration is reached. Job terminated.");
+                    System.out.println("[INFO] Program run time: " + (System.currentTimeMillis() - programStartTime) / 1000 + "s");
+                    break;
+                } else if (converged >= convergenceThreshold) {
+                    System.out.println("[INFO] Convergence is reached. Job terminated.");
+                    System.out.println("[INFO] Program run time: " + (System.currentTimeMillis() - programStartTime) / 1000 + "s");
+                    break;
+                }
             }
 
             it++;
@@ -212,17 +236,15 @@ public class MyDriver {
         FSDataInputStream in = fs.open(inputPath);
         Scanner scanner = new Scanner(in);
         capacity = scanner.nextLong();
-        while (scanner.hasNextLine()) {
-            if (scanner.hasNextInt()) { // prevent reading empty line
-                weights.add(scanner.nextInt());
-                values.add(scanner.nextInt());
-            } else { // skip empty line
-                scanner.nextLine();
-            }
+        while (scanner.hasNextInt()) {
+            weights.add(scanner.nextInt());
+            values.add(scanner.nextInt());
         }
         int geneLen = weights.size();
 
+        // determine population and convergence
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));
+        convergenceThreshold = (int) Math.ceil(geneLen * 0.8);
 
         // clear runtime
         fs.delete(new Path(ROOT_DIR), true);
