@@ -1,0 +1,8 @@
+simple: 805
+medium: 3884
+hard: 506711
+very_hard: 619792
+extreme: 10000046259
+
+目前待优化：
+hard — extreme 难度的问题含 1 量都很小，pMutation 和 InitMapper 里的概率都为 0.00005；但是对于 simple 和 medium 来说，这个值应该为 0.05。
