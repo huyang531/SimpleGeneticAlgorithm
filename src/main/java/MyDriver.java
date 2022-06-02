@@ -22,10 +22,10 @@ public class MyDriver {
     public static final int LONG_BITS = 64; // number of bits in a Long
     public static final String ROOT_DIR = "/Users/huyang/Hadoop_runtime"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "map-results"; // directory to store results
-    public static final long BITS_PER_MAPPER = 200L; // TODO find number of bits an initial mapper can handle
+    public static long BITS_PER_MAPPER = 200L; // TODO find number of bits an initial mapper can handle
 
-    public static final Vector<Integer> weights = new Vector<>();
-    public static final Vector<Integer> values = new Vector<>();
+    public static final Vector<Long> weights = new Vector<>();
+    public static final Vector<Long> values = new Vector<>();
     public static long capacity;
 
     public static Path tmpDir;
@@ -89,8 +89,7 @@ public class MyDriver {
                 System.out.println("[INFO] Program started.");
                 System.out.println("[INFO] Number of Mappers: " + nMappers);
                 System.out.println("[INFO] Number of Reducers: " + nReducers);
-                System.out.println("[WARNING] Existing files from temporary directory are deleted: " + tmpDir);
-                System.out.println("---------------------------");
+                System.out.println("[WARNING] Existing files from temporary directory will be deleted: " + tmpDir);
 
                 // write nMappers files to the fs in order to control the number of mappers
                 fs.delete(tmpDir, true);
@@ -237,10 +236,13 @@ public class MyDriver {
         Scanner scanner = new Scanner(in);
         capacity = scanner.nextLong();
         while (scanner.hasNextInt()) {
-            weights.add(scanner.nextInt());
-            values.add(scanner.nextInt());
+            weights.add(scanner.nextLong());
+            values.add(scanner.nextLong());
         }
         int geneLen = weights.size();
+
+        // adjust BITS_PER_MAPPER
+        if (geneLen > BITS_PER_MAPPER) BITS_PER_MAPPER = geneLen * 4L;
 
         // determine population and convergence
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));
