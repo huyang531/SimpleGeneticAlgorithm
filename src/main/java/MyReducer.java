@@ -18,8 +18,10 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
 
     double pCrossover = 0.3; // 交换发生的概率
     double pCrossoverPerBit = 0.5; // 交换发生时，每一位发生交换的概率
-    double pMutation = 0.2; // 突变发生的概率
-    double pMutationPerBit = 0.1; // 突变发生时，每一位发生突变的概率
+    public static double pMutation = 0.2; // 突变发生的概率 (0.2)
+    public final static double originalP = 0.2;
+    double pMutationPerBit = 0.00005; // 突变发生时，每一位发生突变的概率 (0.1)
+//    double pMutationPerBit = 0.05; // 突变发生时，每一位发生突变的概率 (0.1)
     Random rng;
 
     /**
@@ -29,6 +31,15 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
     public void setup(Reducer<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) {
         rng = new Random(System.nanoTime());
         tournamentInd = new LongWritable[2*tournamentSize][MyDriver.LONGS_PER_ARRAY];
+        if (MyDriver.converged % 5 == 0 && MyDriver.converged != 0) {
+            pMutation = 0.79;
+            System.out.println("[WARNING] pMutation REST!!! pMutation: " + pMutation);
+        }
+
+        if (pMutation != originalP && MyDriver.converged == 0) {
+            pMutation = originalP;
+            System.out.println("[WARNING] pMutation REST!!! pMutation: " + pMutation);
+        }
     }
 
     /**

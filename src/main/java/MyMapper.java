@@ -46,18 +46,20 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
             }
         }
 
-        // if knapsack overflow (sneaky evolve)
-        while (weight > MyDriver.capacity) {
-            // randomly take out one item
-            int randomIndex = rng.nextInt(ones.size());
-            int takeOutIndex = ones.get(randomIndex);
-            ones.remove(randomIndex);
+        if (weight > MyDriver.capacity) return 0;
 
-            long minuend = 1L << (takeOutIndex % MyDriver.LONG_BITS);
-            individual[takeOutIndex / MyDriver.LONG_BITS].set(individual[takeOutIndex / MyDriver.LONG_BITS].get() - minuend);
-            weight -= MyDriver.weights.get(takeOutIndex);
-            fitness -= MyDriver.values.get(takeOutIndex);
-        }
+//        // if knapsack overflow (sneaky evolve)
+//        while (weight > MyDriver.capacity) {
+//            // randomly take out one item
+//            int randomIndex = rng.nextInt(ones.size());
+//            int takeOutIndex = ones.get(randomIndex);
+//            ones.remove(randomIndex);
+//
+//            long minuend = 1L << (takeOutIndex % MyDriver.LONG_BITS);
+//            individual[takeOutIndex / MyDriver.LONG_BITS].set(individual[takeOutIndex / MyDriver.LONG_BITS].get() - minuend);
+//            weight -= MyDriver.weights.get(takeOutIndex);
+//            fitness -= MyDriver.values.get(takeOutIndex);
+//        }
 
         return fitness;
     }

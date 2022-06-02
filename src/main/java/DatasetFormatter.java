@@ -7,8 +7,8 @@ public class DatasetFormatter {
         FileWriter fileWriter = null;
         Scanner scanner = null;
         try {
-            fileInputStream = new FileInputStream("/Users/huyang/Desktop/Courses/大数据原理与技术/final_project/SimpleGeneticAlgorithm/test_input/extreme.txt");
-            fileWriter = new FileWriter("/Users/huyang/Desktop/Courses/大数据原理与技术/final_project/SimpleGeneticAlgorithm/test_input/extreme_new.txt");
+            fileInputStream = new FileInputStream("/Users/huyang/Desktop/Courses/大数据原理与技术/final_project/SimpleGeneticAlgorithm/test_input/very_hard.txt");
+            fileWriter = new FileWriter("/Users/huyang/Desktop/Courses/大数据原理与技术/final_project/SimpleGeneticAlgorithm/test_input/very_hard_new.txt");
 
             scanner = new Scanner(fileInputStream);
             scanner.nextInt();

@@ -30,7 +30,7 @@ public class InitMapper extends Mapper<LongArrayWritable, LongWritable, LongArra
             for (int j = 0; j < MyDriver.LONGS_PER_ARRAY; j++) {
                 long g = 0;
                 for (int k = 0; k < MyDriver.LONG_BITS; k++) {
-                    g = g | (rng.nextBoolean() ? 0 : 1);
+                    g = g | (rng.nextDouble() > 0.00005 ? 0 : 1);
                     if (k != MyDriver.LONG_BITS - 1) g <<= 1; // don't shift the last bit
                 }
                 individual[j] = new LongWritable(g);

@@ -32,11 +32,11 @@ public class MyDriver {
     public static Path inputDir;
     public static Path outputDir;
 
-    private static long lastMax;
-    private static int converged = 0;
-    private static int convergenceThreshold;
+    public static long lastMax;
+    public static int converged = 0;
+    public static int convergenceThreshold;
 
-    private static final long programStartTime = System.currentTimeMillis();
+    public static final long programStartTime = System.currentTimeMillis();
 
     /**
      * Launch and control the tasks. This method controls the overall flow. It will start multiple MapReduce tasks. The
@@ -89,6 +89,7 @@ public class MyDriver {
                 System.out.println("[INFO] Program started.");
                 System.out.println("[INFO] Number of Mappers: " + nMappers);
                 System.out.println("[INFO] Number of Reducers: " + nReducers);
+                System.out.println("[INFO] Convergence Threshold: " + convergenceThreshold);
                 System.out.println("[WARNING] Existing files from temporary directory will be deleted: " + tmpDir);
 
                 // write nMappers files to the fs in order to control the number of mappers
@@ -135,6 +136,8 @@ public class MyDriver {
             LongArrayWritable maxIndividual = new LongArrayWritable();
 
             if (it > 0) {
+                // delete deprecated files
+                fs.delete(new Path(tmpDir, "iter_" + (it - 1)), true);
                 Path global = new Path(tmpDir, GLOBAL_MAP_RESULT_DIR);
                 FileStatus[] fileStatuses = fs.listStatus(global);
 
@@ -199,6 +202,11 @@ public class MyDriver {
                 }
             }
 
+            // delete deprecated files
+            if (it > 0) {
+
+            }
+
             it++;
         }
 
@@ -248,7 +256,7 @@ public class MyDriver {
         convergenceThreshold = (int) Math.ceil(geneLen * 0.8);
 
         // adjust BITS_PER_MAPPER
-        if (geneLen > BITS_PER_MAPPER) BITS_PER_MAPPER = (int) Math.ceil(geneLen * pop * 0.02);
+        if (geneLen > BITS_PER_MAPPER) BITS_PER_MAPPER = (int) Math.ceil(geneLen * pop * 0.17);
 
         // clear runtime
         fs.delete(new Path(ROOT_DIR), true);
