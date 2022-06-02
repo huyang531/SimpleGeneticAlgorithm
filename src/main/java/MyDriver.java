@@ -21,7 +21,7 @@ public class MyDriver {
     public static int LONGS_PER_ARRAY; // number of longs in an array needed to represent a gene
     public static final int LONG_BITS = 64; // number of bits in a Long
     public static final String ROOT_DIR = "/Users/huyang/Desktop/Courses/大数据原理与技术/final_project/SimpleGeneticAlgorithm/runtime"; // root directory for temp files
-    public static final String GLOBAL_MAP_RESULT_DIR = "/map-results"; // directory to store results
+    public static final String GLOBAL_MAP_RESULT_DIR = "map-results"; // directory to store results
     public static final long BITS_PER_MAPPER = 200L; // TODO find number of bits an initial mapper can handle
 
     public static final Vector<Integer> weights = new Vector<>();
@@ -58,7 +58,7 @@ public class MyDriver {
             Job job = Job.getInstance(conf, "0-1 Knapsack Problem Iter " + it);
 
             // set config
-//            job.setSpeculativeExecution(true);
+            job.setSpeculativeExecution(true);
 
             job.setInputFormatClass(SequenceFileInputFormat.class);
             job.setOutputKeyClass(LongArrayWritable.class);
