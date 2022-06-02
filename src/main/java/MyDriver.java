@@ -181,6 +181,7 @@ public class MyDriver {
                 System.out.println("Iteration " + it);
                 System.out.println("-------------------------");
                 System.out.println("Population: " + pop);
+                System.out.println("Gene Length: " + geneLen);
                 System.out.println("Best Individual: " + maxIndividual);
                 System.out.println("Best Fitness: " + maxFitness);
                 System.out.println("Best Weight: " + maxWeight);
@@ -235,18 +236,19 @@ public class MyDriver {
         FSDataInputStream in = fs.open(inputPath);
         Scanner scanner = new Scanner(in);
         capacity = scanner.nextLong();
-        while (scanner.hasNextInt()) {
+        while (scanner.hasNextLong()) {
             weights.add(scanner.nextLong());
             values.add(scanner.nextLong());
         }
         int geneLen = weights.size();
 
-        // adjust BITS_PER_MAPPER
-        if (geneLen > BITS_PER_MAPPER) BITS_PER_MAPPER = geneLen * 4L;
 
         // determine population and convergence
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));
         convergenceThreshold = (int) Math.ceil(geneLen * 0.8);
+
+        // adjust BITS_PER_MAPPER
+        if (geneLen > BITS_PER_MAPPER) BITS_PER_MAPPER = (int) Math.ceil(geneLen * pop * 0.02);
 
         // clear runtime
         fs.delete(new Path(ROOT_DIR), true);
