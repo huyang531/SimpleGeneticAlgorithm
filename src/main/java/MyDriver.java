@@ -20,7 +20,7 @@ public class MyDriver {
     public static int GENE_LEN_REMAINDER; // equals geneLen % LONG_BITS
     public static int LONGS_PER_ARRAY; // number of longs in an array needed to represent a gene
     public static final int LONG_BITS = 64; // number of bits in a Long
-    public static final String ROOT_DIR = "/Users/huyang/Desktop/Courses/大数据原理与技术/final_project/SimpleGeneticAlgorithm/runtime"; // root directory for temp files
+    public static final String ROOT_DIR = "/Users/huyang/Hadoop_runtime"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "map-results"; // directory to store results
     public static final long BITS_PER_MAPPER = 200L; // TODO find number of bits an initial mapper can handle
 
@@ -31,6 +31,9 @@ public class MyDriver {
     public static Path tmpDir;
     public static Path inputDir;
     public static Path outputDir;
+
+    private static long lastMax;
+    private static long converged;
 
     /**
      * Launch and control the tasks. This method controls the overall flow. It will start multiple MapReduce tasks. The
@@ -51,8 +54,10 @@ public class MyDriver {
         GENE_LEN_REMAINDER = geneLen % LONG_BITS;
         int it = 0;
         int nMappers = (int) Math.ceil((double) pop * geneLen / BITS_PER_MAPPER); // number of initial mappers needed
+        long startTime = 0;
 
         while (true) {
+            startTime = System.currentTimeMillis();
             // create job and config
             Configuration conf = new Configuration();
             Job job = Job.getInstance(conf, "0-1 Knapsack Problem Iter " + it);
@@ -97,10 +102,11 @@ public class MyDriver {
 
                 // set job
                 job.setMapperClass(InitMapper.class);
-//                job.setReducerClass(Reducer.class);
+                job.setReducerClass(Reducer.class);
                 job.setNumReduceTasks(0);
+                System.out.println("[INFO] Generating initial population...");
             } else { // real GA tasks
-                // set job
+                // set jobs
                 job.setMapperClass(MyMapper.class);
                 job.setReducerClass(MyReducer.class);
                 job.setNumReduceTasks(nReducers);
@@ -108,10 +114,13 @@ public class MyDriver {
                 // delete deprecated files and temp files from last run
                 fs.delete(outputDir, true);
                 fs.delete(new Path(tmpDir, GLOBAL_MAP_RESULT_DIR), true);
+                System.out.println("[INFO] Running iteration " + it + "...");
             }
 
             // run job
             if (!job.waitForCompletion(true)) return -1;
+
+            if (it == 0) System.out.println("[INFO] Finished generating initial population!");
 
             // At the end of each job, find global best individual
             LongWritable currFitness = new LongWritable();
@@ -139,6 +148,20 @@ public class MyDriver {
                     reader.close();
                 }
 
+                // get the best individual's weight
+                long maxWeight= 0;
+                for (int i = 0; i < maxIndividual.get().length; i++) {
+                    long mask = 1L;
+                    int limit = (i == maxIndividual.get().length - 1 ? GENE_LEN_REMAINDER : LONG_BITS);
+                    for (int j = 0; j < limit; j++) {
+                        int index = i * LONG_BITS + j;
+                        if ((maxIndividual.get()[i].get() & mask) != 0) {
+                            maxWeight += weights.get(index);
+                        }
+                        mask <<= 1;
+                    }
+                }
+
                 // pretty print result
                 System.out.println("-------------------------");
                 System.out.println("Iteration " + it);
@@ -146,8 +169,8 @@ public class MyDriver {
                 System.out.println("Population: " + pop);
                 System.out.println("Best Individual: " + maxIndividual);
                 System.out.println("Best Fitness: " + maxFitness);
-                System.out.println("Time Taken: " + (System.currentTimeMillis() - job.getStartTime()) + "ms");
-                System.out.println("");
+                System.out.println("Best Weight: " + maxWeight);
+                System.out.println("Time Taken: " + (System.currentTimeMillis() - startTime) + "ms\n");
 
                 if (it > maxIterations) break; // TODO check if convergence is reached
             }
@@ -193,6 +216,8 @@ public class MyDriver {
             if (scanner.hasNextInt()) { // prevent reading empty line
                 weights.add(scanner.nextInt());
                 values.add(scanner.nextInt());
+            } else { // skip empty line
+                scanner.nextLine();
             }
         }
         int geneLen = weights.size();

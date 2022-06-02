@@ -37,7 +37,7 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
             int limit = (i == individual.length - 1 ? MyDriver.GENE_LEN_REMAINDER : MyDriver.LONG_BITS);
             for (int j = 0; j < limit; j++) {
                 int index = i * MyDriver.LONG_BITS + j;
-                if ((individual[i].get() & mask) == 1) {
+                if ((individual[i].get() & mask) != 0) {
                     ones.add(index);
                     weight += MyDriver.weights.get(index);
                     fitness += MyDriver.values.get(index);

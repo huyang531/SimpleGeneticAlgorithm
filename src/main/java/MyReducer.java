@@ -18,8 +18,8 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
 
     double pCrossover = 0.3; // 交换发生的概率
     double pCrossoverPerBit = 0.5; // 交换发生时，每一位发生交换的概率
-    double pMutation = 0.1; // 突变发生的概率
-    double pMutationPerBit = 0.03; // 突变发生时，每一位发生突变的概率
+    double pMutation = 0.2; // 突变发生的概率
+    double pMutationPerBit = 0.1; // 突变发生时，每一位发生突变的概率
     Random rng;
 
     /**
@@ -121,7 +121,7 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
                 tournamentFitness[tournamentSize - 1] = value.get();
                 int index = processedIndividuals % 2;
                 ind[index] = new LongArrayWritable(tournament(0));
-                if (index == tournamentSize % 2) {
+                if (index != tournamentSize % 2) {
                     crossover();
                     mutation();
                     context.write(ind[0], new LongWritable(0));

@@ -34,8 +34,13 @@ public class LongArrayWritable implements WritableComparable<LongArrayWritable> 
     @Override
     public String toString() {
        StringBuilder str = new StringBuilder();
-       for (LongWritable value : this.get()) {
-           str.append(value.get()).append("|");
+       for (int i = 0; i < values.length; i++) {
+           int limit = (i == values.length - 1 ? MyDriver.GENE_LEN_REMAINDER : MyDriver.LONG_BITS);
+           long mask = 1L;
+           for (int j = 0; j < limit; j++, mask <<= 1) {
+               str.append((values[i].get() & mask) == 0 ? '0' : '1');
+           }
+           str.append(" | ");
        }
        return str.toString();
     }
