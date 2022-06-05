@@ -24,6 +24,7 @@ public class MyDriver {
     public static final String ROOT_DIR = "/Users/huyang/Hadoop_runtime"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "map-results"; // directory to store results
     public static long BITS_PER_MAPPER = 9999L; // DUMMY number of bits an initial mapper can handle
+    public static long pop_;
 
     public static final Vector<Long> weights = new Vector<>();
     public static final Vector<Long> values = new Vector<>();
@@ -85,6 +86,7 @@ public class MyDriver {
         LONGS_PER_ARRAY = (int) Math.ceil((double) geneLen / LONG_BITS);
         GENE_LEN_REMAINDER = geneLen % LONG_BITS;
         int it = 0;
+        pop_ = pop;
         int nMappers = (int) Math.ceil((double) pop * geneLen / BITS_PER_MAPPER); // number of initial mappers needed
         long startTime = 0;
 

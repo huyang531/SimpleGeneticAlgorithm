@@ -10,7 +10,7 @@ import java.util.Random;
  */
 public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
         LongArrayWritable, LongWritable> {
-    int tournamentSize = 5; // 巡回赛窗口大小
+    public static  int tournamentSize = 5; // 巡回赛窗口大小
     LongWritable[][] tournamentInd; // 巡回赛的基因窗口列表
     long[] tournamentFitness = new long[2*tournamentSize]; // 巡回赛的适应度窗口列表
     int processedIndividuals=0; // 已处理的个体数量
@@ -21,6 +21,8 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
     public static double pMutation = 0.2; // 突变发生的概率 (0.2)
     public final static double originalP = 0.2;
     public static double pMutationPerBit = 0.2; // 突变发生时，每一位发生突变的概率 (0.1)
+    public static double b = Math.pow(0.05 * (( 1 - 1d / tournamentSize) - pMutationPerBit),
+            1 / Math.floor(Math.log(MyDriver.pop_) / Math.log(tournamentSize)) );
     Random rng;
 
     /**
@@ -30,14 +32,13 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
     public void setup(Reducer<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) {
         rng = new Random(System.nanoTime());
         tournamentInd = new LongWritable[2*tournamentSize][MyDriver.LONGS_PER_ARRAY];
-        if (MyDriver.converged % 5 == 0 && MyDriver.converged != 0) {
-            pMutation = 0.79;
-            System.out.println("[WARNING] pMutation REST!!! pMutation: " + pMutation);
-        }
-
-        if (pMutation != originalP && MyDriver.converged == 0) {
+        //
+        if (MyDriver.converged != 0) {
+            pMutation = (1 - 1d / tournamentSize) -
+                    Math.pow((( 1 - 1d / tournamentSize) - pMutationPerBit) * b,
+                            MyDriver.converged);
+        } else {
             pMutation = originalP;
-            System.out.println("[WARNING] pMutation REST!!! pMutation: " + pMutation);
         }
     }
 
