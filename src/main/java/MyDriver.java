@@ -23,7 +23,7 @@ public class MyDriver {
     public static final int LONG_BITS = 64; // number of bits in a Long
     public static final String ROOT_DIR = "/Users/huyang/Hadoop_runtime"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "map-results"; // directory to store results
-    public static long BITS_PER_MAPPER = 9999L; // DUMMY number of bits an initial mapper can handle
+    public static long BITS_PER_MAPPER = 200L; // DUMMY number of bits an initial mapper can handle
     public static long pop_;
 
     public static final Vector<Long> weights = new Vector<>();
@@ -40,9 +40,14 @@ public class MyDriver {
 
     public static final long programStartTime = System.currentTimeMillis();
 
+    /**
+     * Get an estimated proportion of ones' in the gene in order to initialize a reasonable population, and mutate at a
+     * reasonable speed
+     * @param geneLen length of the gene
+     */
     public static void getProportionOfOnes(int geneLen) {
         Random rng = new Random(System.nanoTime());
-        long numOnes = 0, mask = 1;
+        long numOnes = 0;
 
         LongWritable[][] individuals = new LongWritable[geneLen][LONGS_PER_ARRAY];
         for (int i = 0; i < geneLen; i++) {
@@ -52,7 +57,9 @@ public class MyDriver {
 
             // get number of ones
             for (int j = 0; j < LONGS_PER_ARRAY; j++) {
-                for (int k = 0; k < LONG_BITS; k++, mask <<= 1) {
+                int limit = (j == LONGS_PER_ARRAY - 1 ? GENE_LEN_REMAINDER : LONG_BITS);
+                long mask = 1;
+                for (int k = 0; k < limit; k++, mask <<= 1) {
                     if ((individuals[i][j].get() & mask) != 0) {
                         numOnes++;
                     }
@@ -63,9 +70,15 @@ public class MyDriver {
         // get proportion of ones and set MyReducer.pMutationPerBit and InitMapper.pOnes
         double proportionOfOnes = (double) numOnes / (geneLen * geneLen);
         if (proportionOfOnes < MyReducer.pMutationPerBit) {
-            MyReducer.pMutationPerBit =  proportionOfOnes;
+            MyReducer.pMutationPerBit =  proportionOfOnes * 0.1;
         }
-        InitMapper.pOnes = proportionOfOnes;
+        InitMapper.pOnes = proportionOfOnes * 0.1;
+
+        System.out.println("[INFO] Generated trial population!");
+        System.out.println("[INFO] numOnes: " + numOnes);
+        System.out.println("[INFO] proportionOfOnes: " + proportionOfOnes);
+        System.out.println("[INFO] MyReducer.pMutationPerBit: " + MyReducer.pMutationPerBit);
+        System.out.println("[INFO] InitMapper.pOnes: " + InitMapper.pOnes);
     }
 
     /**
@@ -88,7 +101,7 @@ public class MyDriver {
         int it = 0;
         pop_ = pop;
         int nMappers = (int) Math.ceil((double) pop * geneLen / BITS_PER_MAPPER); // number of initial mappers needed
-        long startTime = 0;
+        long startTime;
 
         getProportionOfOnes(geneLen);
 
@@ -184,19 +197,19 @@ public class MyDriver {
                         if (currFitness.get() > maxFitness.get()) {
                             maxFitness.set(currFitness.get());
                             maxIndividual.set(currIndividual.get());
-
-                            // track convergence
-                            if (maxFitness.get() == lastMax) {
-                                converged++;
-                            } else {
-                                converged = 0;
-                            }
-                            lastMax = maxFitness.get();
                         }
                     }
 
                     reader.close();
                 }
+
+                // track convergence
+                if (maxFitness.get() == lastMax) {
+                    converged++;
+                } else {
+                    converged = 0;
+                }
+                lastMax = maxFitness.get();
 
                 // get the best individual's weight
                 long maxWeight= 0;
@@ -235,12 +248,16 @@ public class MyDriver {
                 }
             }
 
-            // delete deprecated files
-            if (it > 0) {
-
+            if (it > 0 && maxFitness.get() == 0) {
+                it = 0;
+                converged = 0;
+                fs.delete(new Path(tmpDir, "iter_0"), true);
+                fs.delete(new Path(tmpDir, "iter_1"), true);
+                System.out.println("[WARNING] Initial population's best fitness = 0! " +
+                        "Re-generating initial population...");
+            } else {
+                it++;
             }
-
-            it++;
         }
 
         return 0;
@@ -286,7 +303,7 @@ public class MyDriver {
 
         // determine population and convergence
         int pop = (int) Math.ceil(Integer.parseInt(args[3]) * geneLen * Math.log(geneLen) / Math.log(2));
-        convergenceThreshold = (int) Math.ceil(geneLen * 0.8);
+        convergenceThreshold = (int) Math.ceil(Math.log(geneLen) / Math.log(2)) + 5;
 
         // adjust BITS_PER_MAPPER
         if (geneLen > BITS_PER_MAPPER) BITS_PER_MAPPER = (int) Math.ceil(geneLen * pop * 0.17);

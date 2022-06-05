@@ -21,8 +21,8 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
     public static double pMutation = 0.2; // 突变发生的概率 (0.2)
     public final static double originalP = 0.2;
     public static double pMutationPerBit = 0.2; // 突变发生时，每一位发生突变的概率 (0.1)
-    public static double b = Math.pow(0.05 * (( 1 - 1d / tournamentSize) - pMutationPerBit),
-            1 / Math.floor(Math.log(MyDriver.pop_) / Math.log(tournamentSize)) );
+    public static double b = Math.pow(0.05 * (( 1 - 1d / tournamentSize - 0.1) - pMutationPerBit),
+            1 / Math.floor(Math.log(MyDriver.pop_) / Math.log(tournamentSize)));
     Random rng;
 
     /**
@@ -34,11 +34,13 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
         tournamentInd = new LongWritable[2*tournamentSize][MyDriver.LONGS_PER_ARRAY];
         //
         if (MyDriver.converged != 0) {
-            pMutation = (1 - 1d / tournamentSize) -
-                    Math.pow((( 1 - 1d / tournamentSize) - pMutationPerBit) * b,
+            pMutation = (1 - 1d / tournamentSize - 0.1) -
+                    Math.pow((( 1 - 1d / tournamentSize - 0.1) - pMutationPerBit) * b,
                             MyDriver.converged);
-        } else {
+            System.out.println("[WARNING] pMutation reset to " + pMutation);
+        } else if (pMutation != originalP){
             pMutation = originalP;
+            System.out.println("[WARNING] pMutation reset to " + pMutation);
         }
     }
 
