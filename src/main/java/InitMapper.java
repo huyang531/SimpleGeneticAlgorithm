@@ -11,6 +11,7 @@ public class InitMapper extends Mapper<LongArrayWritable, LongWritable, LongArra
 
     public Random rng = new Random(System.nanoTime());
     public LongWritable[] individual = new LongWritable[MyDriver.LONGS_PER_ARRAY];
+    public static double pOnes = 0.5;
 
     /**
      * This method will generate num individuals randomly using bit-wise operation (which is more efficient). It will
@@ -27,25 +28,19 @@ public class InitMapper extends Mapper<LongArrayWritable, LongWritable, LongArra
         int num = (int) Math.ceil((double) MyDriver.BITS_PER_MAPPER / MyDriver.weights.size());
         // generate initial individuals
         for (int i = 0; i < num; i++) {
-            for (int j = 0; j < MyDriver.LONGS_PER_ARRAY; j++) {
-                long g = 0;
-                for (int k = 0; k < MyDriver.LONG_BITS; k++) {
-                    g = g | (rng.nextDouble() > 0.00005 ? 0 : 1);
-                    if (k != MyDriver.LONG_BITS - 1) g <<= 1; // don't shift the last bit
-                }
-                individual[j] = new LongWritable(g);
-            }
+            generateOneIndividual(individual, rng);
             context.write(new LongArrayWritable(individual), new LongWritable(0));
         }
     }
 
-    @Override
-    protected void cleanup(Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
-        super.cleanup(context);
-    }
-
-    @Override
-    protected void setup(Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
-        super.setup(context);
+    public static void generateOneIndividual(LongWritable[] individual, Random rng) {
+        for (int j = 0; j < MyDriver.LONGS_PER_ARRAY; j++) {
+            long g = 0;
+            for (int k = 0; k < MyDriver.LONG_BITS; k++) {
+                g = g | (rng.nextDouble() > pOnes ? 0 : 1);
+                if (k != MyDriver.LONG_BITS - 1) g <<= 1; // don't shift the last bit
+            }
+            individual[j] = new LongWritable(g);
+        }
     }
 }

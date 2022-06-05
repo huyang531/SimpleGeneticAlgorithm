@@ -20,8 +20,7 @@ public class MyReducer extends Reducer<LongArrayWritable, LongWritable,
     double pCrossoverPerBit = 0.5; // 交换发生时，每一位发生交换的概率
     public static double pMutation = 0.2; // 突变发生的概率 (0.2)
     public final static double originalP = 0.2;
-    double pMutationPerBit = 0.00005; // 突变发生时，每一位发生突变的概率 (0.1)
-//    double pMutationPerBit = 0.05; // 突变发生时，每一位发生突变的概率 (0.1)
+    public static double pMutationPerBit = 0.2; // 突变发生时，每一位发生突变的概率 (0.1)
     Random rng;
 
     /**

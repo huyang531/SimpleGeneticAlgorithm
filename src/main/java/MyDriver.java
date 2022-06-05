@@ -13,6 +13,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -22,7 +23,7 @@ public class MyDriver {
     public static final int LONG_BITS = 64; // number of bits in a Long
     public static final String ROOT_DIR = "/Users/huyang/Hadoop_runtime"; // root directory for temp files
     public static final String GLOBAL_MAP_RESULT_DIR = "map-results"; // directory to store results
-    public static long BITS_PER_MAPPER = 200L; // TODO find number of bits an initial mapper can handle
+    public static long BITS_PER_MAPPER = 9999L; // DUMMY number of bits an initial mapper can handle
 
     public static final Vector<Long> weights = new Vector<>();
     public static final Vector<Long> values = new Vector<>();
@@ -37,6 +38,34 @@ public class MyDriver {
     public static int convergenceThreshold;
 
     public static final long programStartTime = System.currentTimeMillis();
+
+    public static void getProportionOfOnes(int geneLen) {
+        Random rng = new Random(System.nanoTime());
+        long numOnes = 0, mask = 1;
+
+        LongWritable[][] individuals = new LongWritable[geneLen][LONGS_PER_ARRAY];
+        for (int i = 0; i < geneLen; i++) {
+            // generate geneLen individuals and get fitness
+            InitMapper.generateOneIndividual(individuals[i], rng);
+            MyMapper.getFitness(individuals[i], true, rng);
+
+            // get number of ones
+            for (int j = 0; j < LONGS_PER_ARRAY; j++) {
+                for (int k = 0; k < LONG_BITS; k++, mask <<= 1) {
+                    if ((individuals[i][j].get() & mask) != 0) {
+                        numOnes++;
+                    }
+                }
+            }
+        }
+
+        // get proportion of ones and set MyReducer.pMutationPerBit and InitMapper.pOnes
+        double proportionOfOnes = (double) numOnes / (geneLen * geneLen);
+        if (proportionOfOnes < MyReducer.pMutationPerBit) {
+            MyReducer.pMutationPerBit =  proportionOfOnes;
+        }
+        InitMapper.pOnes = proportionOfOnes;
+    }
 
     /**
      * Launch and control the tasks. This method controls the overall flow. It will start multiple MapReduce tasks. The
@@ -58,6 +87,8 @@ public class MyDriver {
         int it = 0;
         int nMappers = (int) Math.ceil((double) pop * geneLen / BITS_PER_MAPPER); // number of initial mappers needed
         long startTime = 0;
+
+        getProportionOfOnes(geneLen);
 
         while (true) {
             startTime = System.currentTimeMillis();

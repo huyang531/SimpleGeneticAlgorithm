@@ -17,17 +17,19 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
     public long maxFitness = -1;
     public LongArrayWritable maxIndividual;
     public long fitness = 0;
-    public Vector<Integer> ones;
 
     /**
      * Get the fitness of an individual, aka the total weight of the current selection. If the total weight exceeded the
      * knapsack's capacity, randomly remove items from the selection until the weight is below the capacity. This could
      * be seen as another form of evolution.
      * @param individual the individual to evaluate (and possibly mutate?)
+     * @param trial whether this is called from the trail run at the beginning to determine the proportion of 1s'
+     * @param rng this needs to be explicitly passed here to bypass the nature of static methods. (This method has to be
+     *            static because it needs to be called from other classes)
      * @return the fitness of the individual
      */
-    public long getFitness(LongWritable[] individual) {
-        ones = new Vector<>();
+    public static long getFitness(LongWritable[] individual, boolean trial, Random rng) {
+        Vector<Integer> ones = new Vector<>();
 
         // get current knapsack value
         long weight = 0;
@@ -46,20 +48,20 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
             }
         }
 
-        if (weight > MyDriver.capacity) return 0;
+        if (!trial && weight > MyDriver.capacity) return 0;
 
-//        // if knapsack overflow (sneaky evolve)
-//        while (weight > MyDriver.capacity) {
-//            // randomly take out one item
-//            int randomIndex = rng.nextInt(ones.size());
-//            int takeOutIndex = ones.get(randomIndex);
-//            ones.remove(randomIndex);
-//
-//            long minuend = 1L << (takeOutIndex % MyDriver.LONG_BITS);
-//            individual[takeOutIndex / MyDriver.LONG_BITS].set(individual[takeOutIndex / MyDriver.LONG_BITS].get() - minuend);
-//            weight -= MyDriver.weights.get(takeOutIndex);
-//            fitness -= MyDriver.values.get(takeOutIndex);
-//        }
+        // if knapsack overflow (sneaky evolve)
+        while (weight > MyDriver.capacity) {
+            // randomly take out one item
+            int randomIndex = rng.nextInt(ones.size());
+            int takeOutIndex = ones.get(randomIndex);
+            ones.remove(randomIndex);
+
+            long minuend = 1L << (takeOutIndex % MyDriver.LONG_BITS);
+            individual[takeOutIndex / MyDriver.LONG_BITS].set(individual[takeOutIndex / MyDriver.LONG_BITS].get() - minuend);
+            weight -= MyDriver.weights.get(takeOutIndex);
+            fitness -= MyDriver.values.get(takeOutIndex);
+        }
 
         return fitness;
     }
@@ -77,7 +79,7 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
     public void map(LongArrayWritable key, LongWritable value, Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
         // calculate fitness
         LongWritable[] individual = key.get();
-        fitness = getFitness(individual);
+        fitness = getFitness(individual, false, rng);
 
         // keep track of the best individual to file
         if (fitness > maxFitness) {
@@ -111,10 +113,5 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
 
         writer.close();
         super.cleanup(context);
-    }
-
-    @Override
-    protected void setup(Mapper<LongArrayWritable, LongWritable, LongArrayWritable, LongWritable>.Context context) throws IOException, InterruptedException {
-        super.setup(context);
     }
 }
