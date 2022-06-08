@@ -19,9 +19,9 @@ public class MyMapper extends Mapper<LongArrayWritable, LongWritable, LongArrayW
     public long fitness = 0;
 
     /**
-     * Get the fitness of an individual, aka the total weight of the current selection. If the total weight exceeded the
-     * knapsack's capacity, randomly remove items from the selection until the weight is below the capacity. This could
-     * be seen as another form of evolution.
+     * Get the fitness of an individual, aka the total weight of the current selection. During trial run, if the total
+     * weight exceeded the knapsack's capacity, randomly remove items from the selection until the weight is below the
+     * capacity. This is to get an estimated proportion of 1s' in the gene.
      * @param individual the individual to evaluate (and possibly mutate?)
      * @param trial whether this is called from the trail run at the beginning to determine the proportion of 1s'
      * @param rng this needs to be explicitly passed here to bypass the nature of static methods. (This method has to be
